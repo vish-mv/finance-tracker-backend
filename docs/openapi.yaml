@@ -1,0 +1,626 @@
+openapi: 3.0.3
+info:
+  title: Finance Tracker API
+  version: 1.0.0
+  description: Backend API for a personal expenses tracking system with AI insights.
+servers:
+  - url: http://localhost:5000
+    description: Local server
+tags:
+  - name: Auth
+  - name: Transactions
+  - name: Budgets
+  - name: Reports
+paths:
+  /:
+    get:
+      summary: Health check
+      tags: [Reports]
+      responses:
+        '200':
+          description: API running message
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRegisterRequest'
+      responses:
+        '201':
+          description: User registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Email already registered or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+  /api/auth/login:
+    post:
+      summary: Login and get JWT token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+      responses:
+        '200':
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLoginResponse'
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+  /api/transactions:
+    get:
+      summary: List transactions for current user
+      tags: [Transactions]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+        '401':
+          description: Unauthorized
+    post:
+      summary: Create a transaction
+      tags: [Transactions]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionCreateRequest'
+      responses:
+        '201':
+          description: Created transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /api/transactions/{id}:
+    get:
+      summary: Get a transaction by ID (must belong to user)
+      tags: [Transactions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+    put:
+      summary: Update a transaction by ID
+      tags: [Transactions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionUpdateRequest'
+      responses:
+        '200':
+          description: Updated transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+    delete:
+      summary: Delete a transaction by ID
+      tags: [Transactions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+  /api/budgets:
+    get:
+      summary: List budgets for current user
+      tags: [Budgets]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of budgets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Budget'
+        '401':
+          description: Unauthorized
+    post:
+      summary: Create a budget
+      tags: [Budgets]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BudgetCreateRequest'
+      responses:
+        '201':
+          description: Created budget
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Budget'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /api/budgets/{id}:
+    get:
+      summary: Get a budget with spending progress
+      tags: [Budgets]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Budget with progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetWithProgress'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+    put:
+      summary: Update a budget
+      tags: [Budgets]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BudgetUpdateRequest'
+      responses:
+        '200':
+          description: Updated budget
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Budget'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+    delete:
+      summary: Delete a budget
+      tags: [Budgets]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+  /api/reports/monthly:
+    get:
+      summary: Monthly income vs expense summary for current year
+      tags: [Reports]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Monthly summary
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MonthlySummaryItem'
+        '401':
+          description: Unauthorized
+  /api/reports/categories:
+    get:
+      summary: Expense breakdown by category
+      tags: [Reports]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Category breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryBreakdownItem'
+        '401':
+          description: Unauthorized
+  /api/reports/totals:
+    get:
+      summary: Overall totals and balance
+      tags: [Reports]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Totals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Totals'
+        '401':
+          description: Unauthorized
+  /api/reports/ai-insights:
+    get:
+      summary: AI-generated financial insights for current month
+      tags: [Reports]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: AI insights payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiInsightsResponse'
+        '401':
+          description: Unauthorized
+        '500':
+          description: AI generation error
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+    ValidationError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              msg:
+                type: string
+              param:
+                type: string
+              location:
+                type: string
+    AuthRegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 6
+    AuthLoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    AuthLoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+    Transaction:
+      type: object
+      properties:
+        _id:
+          type: string
+        type:
+          type: string
+          enum: [income, expense]
+        category:
+          type: string
+        amount:
+          type: number
+          format: float
+        date:
+          type: string
+          format: date-time
+        note:
+          type: string
+        user:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    TransactionCreateRequest:
+      type: object
+      required: [type, category, amount]
+      properties:
+        type:
+          type: string
+          enum: [income, expense]
+        category:
+          type: string
+        amount:
+          type: number
+        date:
+          type: string
+          format: date-time
+        note:
+          type: string
+    TransactionUpdateRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [income, expense]
+        category:
+          type: string
+        amount:
+          type: number
+        date:
+          type: string
+          format: date-time
+        note:
+          type: string
+    Budget:
+      type: object
+      properties:
+        _id:
+          type: string
+        category:
+          type: string
+        amount:
+          type: number
+        period:
+          type: string
+          enum: [monthly, yearly]
+        user:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    BudgetCreateRequest:
+      type: object
+      required: [category, amount]
+      properties:
+        category:
+          type: string
+        amount:
+          type: number
+        period:
+          type: string
+          enum: [monthly, yearly]
+    BudgetUpdateRequest:
+      type: object
+      properties:
+        category:
+          type: string
+        amount:
+          type: number
+        period:
+          type: string
+          enum: [monthly, yearly]
+    BudgetWithProgress:
+      allOf:
+        - $ref: '#/components/schemas/Budget'
+        - type: object
+          properties:
+            spent:
+              type: number
+            remaining:
+              type: number
+    MonthlySummaryItem:
+      type: object
+      properties:
+        _id:
+          type: integer
+          description: Month number (1-12)
+        income:
+          type: number
+        expense:
+          type: number
+    CategoryBreakdownItem:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Category
+        total:
+          type: number
+    Totals:
+      type: object
+      properties:
+        income:
+          type: number
+        expense:
+          type: number
+        balance:
+          type: number
+    AiInsightsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        financialData:
+          type: object
+          properties:
+            currentMonth:
+              type: object
+              properties:
+                month:
+                  type: integer
+                year:
+                  type: integer
+                income:
+                  type: number
+                expenses:
+                  type: number
+                balance:
+                  type: number
+                transactionCount:
+                  type: integer
+                categoryBreakdown:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CategoryBreakdownItem'
+            last3Months:
+              type: array
+              items:
+                type: object
+                properties:
+                  _id:
+                    type: object
+                    properties:
+                      month:
+                        type: integer
+                      type:
+                        type: string
+                        enum: [income, expense]
+                  total:
+                    type: number
+            topExpenseCategories:
+              type: array
+              items:
+                $ref: '#/components/schemas/CategoryBreakdownItem'
+        aiInsights:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+security:
+  - bearerAuth: []
+
